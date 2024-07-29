@@ -16,12 +16,12 @@ function isValidUrl(string) {
 
 // ... get shortened urls
 
-router.get('/shorten', requireAuth, checkUser, async (req, res) => {
+router.get('/shorten', async (req, res) => {
     try {
-        const shortUrls = await ShortUrl.find({ user: res.locals.user._id });
-        res.render('shorten', { shortUrls: shortUrls });
+        const shortUrls = await ShortUrl.find();
+        res.json({ shortUrls });  // Even if empty, this will be { shortUrls: [] }
     } catch (error) {
-        console.error('Error retrieving short URLs:', error);
+        //console.error('Error retrieving short URLs:', error);
         res.status(500).send('Error retrieving short URLs');
     }
 });

@@ -5,9 +5,6 @@ const ShortUrl = require('../models/ShortUrl');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../models/ShortUrl');
-afterAll(async () => {
-    await mongoose.connection.close();
-});
 jest.mock('../middleware/authMiddleware', () => ({
   requireAuth: (req, res, next) => {
     res.locals.user = { _id: 'mockedUserId' };
@@ -18,20 +15,43 @@ jest.mock('../middleware/authMiddleware', () => ({
     next();
   }
 }));
+jest.mock('jsonwebtoken');
+jest.mock('qrcode', () => ({
+  toDataURL: jest.fn().mockResolvedValue('mock-qr-code-data-url')
+}));
+
+const QRCode = require('qrcode');
 
 describe('Shorten Routes', () => {
   let token;
-  const userId = 'mockedUserId';
+  let userId;
 
   beforeAll(() => {
-    token = jwt.sign({ id: userId }, process.env.JWT_SECRET || 'testsecret', { expiresIn: '1h' });
+    userId = 'mockedUserId';
+    token = jwt.sign({ id: userId }, 'your_jwt_secret');
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  afterAll(async () => {
+    await mongoose.connection.close();
   });
 
   describe('GET /shorten', () => {
+    it('should retrieve short URLs', async () => {
+      const mockShortUrls = [
+        { full: 'https://example.com', short: 'abc123', clicks: 0 },
+        { full: 'https://test.com', short: 'def456', clicks: 5 }
+      ];
+      ShortUrl.find.mockResolvedValue(mockShortUrls);
+
+      const response = await request(app)
+        .get('/shorten')
+        .set('Cookie', `jwt=${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('shortUrls');
+      expect(response.body.shortUrls).toHaveLength(2);
+    });
+
     it('should handle database errors', async () => {
       ShortUrl.find.mockRejectedValue(new Error('Database error'));
 
@@ -51,9 +71,8 @@ describe('Shorten Routes', () => {
         short: 'abc123',
         save: jest.fn(),
       };
-      ShortUrl.findOne = jest.fn().mockResolvedValue(null);
+      ShortUrl.findOne.mockResolvedValue(null);
       ShortUrl.mockImplementation(() => mockShortUrl);
-      QRCode.toDataURL = jest.fn().mockResolvedValue('mock-qr-code-data-url');
 
       const response = await request(app)
         .post('/shorten')
@@ -63,6 +82,7 @@ describe('Shorten Routes', () => {
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('shortUrl');
       expect(mockShortUrl.save).toHaveBeenCalled();
+      expect(QRCode.toDataURL).toHaveBeenCalled();
     });
 
     it('should return existing short URL if it already exists', async () => {
@@ -70,7 +90,7 @@ describe('Shorten Routes', () => {
         full: 'https://example.com',
         short: 'abc123',
       };
-      ShortUrl.findOne = jest.fn().mockResolvedValue(existingUrl);
+      ShortUrl.findOne.mockResolvedValue(existingUrl);
 
       const response = await request(app)
         .post('/shorten')
@@ -127,6 +147,8 @@ describe('Shorten Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({ message: 'Short URL deleted successfully' });
+      expect(ShortUrl.findOne).toHaveBeenCalledWith({ _id: 'abc123', user: userId });
+      expect(ShortUrl.deleteOne).toHaveBeenCalledWith({ _id: 'abc123' });
     });
 
     it('should return 404 if short URL not found', async () => {
@@ -137,7 +159,7 @@ describe('Shorten Routes', () => {
         .set('Cookie', `jwt=${token}`);
 
       expect(response.status).toBe(404);
+      expect(response.body).toEqual({ message: 'Short URL not found' });
     });
   });
 });
-
