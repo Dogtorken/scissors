@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 require('dotenv').config();
 const authRoutes = require('./URL-shortener/routes/authRoutes');
 const shortenRoutes = require('./URL-shortener/routes/shortenRoutes');
@@ -15,6 +16,7 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
 
 // view engine
+app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 // Apply checkUser middleware to all routes
