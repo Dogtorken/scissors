@@ -2,9 +2,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
-const authRoutes = require('./URL shortener/routes/authRoutes');
-const shortenRoutes = require('./URL shortener/routes/shortenRoutes');
-const { checkUser } = require('./URL shortener/middleware/authMiddleware');
+const authRoutes = require('./routes/authRoutes');
+const shortenRoutes = require('./routes/shortenRoutes');
+const { checkUser } = require('./middleware/authMiddleware');
 
 const app = express();
 
