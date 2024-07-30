@@ -39,6 +39,10 @@ const port = process.env.PORT || 3000;
 //     })
 //     .catch((err) => console.log(err));
 
+app.listen(port, () => {
+    console.log(`Server listening on port:${port}`);
+});
+
 mongoose.connect(process.env.dbURI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -49,10 +53,6 @@ const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 db.once('open', () => {
     console.log('Connected to database successfully...');
-});
-
-app.listen(port, () => {
-    console.log(`Server listening on port:${port}`);
 });
 
 module.exports = app;
