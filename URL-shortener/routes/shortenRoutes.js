@@ -19,10 +19,10 @@ function isValidUrl(string) {
 router.get('/shorten', async (req, res) => {
     try {
         const shortUrls = await ShortUrl.find();
-        res.json({ shortUrls });  // Even if empty, this will be { shortUrls: [] }
+        res.render('shorten', { shortUrls });  // Render the 'shorten' template with shortUrls data
     } catch (error) {
-        //console.error('Error retrieving short URLs:', error);
-        res.status(500).send('Error retrieving short URLs');
+        console.error('Error retrieving short URLs:', error);
+        res.status(500).render('error', { message: 'Error retrieving short URLs' });  // Render an error page
     }
 });
 

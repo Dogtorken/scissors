@@ -2,12 +2,16 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const cors = require('cors');
 require('dotenv').config();
 const authRoutes = require('./URL-shortener/routes/authRoutes');
 const shortenRoutes = require('./URL-shortener/routes/shortenRoutes');
 const { checkUser } = require('./URL-shortener/middleware/authMiddleware');
 
 const app = express();
+
+// Enable CORS for all routes
+app.use(cors());
 
 // middleware
 app.use(express.static(path.join(__dirname, 'public')));
@@ -29,20 +33,6 @@ app.use(shortenRoutes); // Keep shorten routes at root level
 
 const port = process.env.PORT || 3000;
 
-// Connect to DB and start server
-// mongoose.connect(process.env.dbURI)
-//     .then(() => {
-//         console.log("Connected to database successfully...")
-//         app.listen(port, () => {
-//             console.log(`Server listening on port:${port}`);
-//         });
-//     })
-//     .catch((err) => console.log(err));
-
-app.listen(port, () => {
-    console.log(`Server listening on port:${port}`);
-});
-
 mongoose.connect(process.env.dbURI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -53,6 +43,10 @@ const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 db.once('open', () => {
     console.log('Connected to database successfully...');
+});
+
+app.listen(port, () => {
+    console.log(`Server listening on port:${port}`);
 });
 
 module.exports = app;
