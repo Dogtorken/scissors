@@ -10,7 +10,7 @@ const { checkUser } = require('./URL-shortener/middleware/authMiddleware');
 const app = express();
 
 // middleware
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
@@ -30,13 +30,29 @@ app.use(shortenRoutes); // Keep shorten routes at root level
 const port = process.env.PORT || 3000;
 
 // Connect to DB and start server
-mongoose.connect(process.env.dbURI)
-    .then(() => {
-        console.log("Connected to database successfully...")
-        app.listen(port, () => {
-            console.log(`Server listening on port:${port}`);
-        });
-    })
-    .catch((err) => console.log(err));
+// mongoose.connect(process.env.dbURI)
+//     .then(() => {
+//         console.log("Connected to database successfully...")
+//         app.listen(port, () => {
+//             console.log(`Server listening on port:${port}`);
+//         });
+//     })
+//     .catch((err) => console.log(err));
+
+mongoose.connect(process.env.dbURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    bufferCommands: false,
+});
+
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+db.once('open', () => {
+    console.log('Connected to database successfully...');
+});
+
+app.listen(port, () => {
+    console.log(`Server listening on port:${port}`);
+});
 
 module.exports = app;
