@@ -32,19 +32,13 @@ app.use(authRoutes); // Prefix auth routes with /auth
 app.use(shortenRoutes); // Keep shorten routes at root level
 
 const port = process.env.PORT || 3000;
-
 mongoose.connect(process.env.dbURI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    bufferCommands: false,
-});
-
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-db.once('open', () => {
-    console.log('Connected to database successfully...');
-});
-
+    ssl: true,
+})
+    .then(() => console.log('Database connected!'))
+    .catch(err => console.error('Connection error:', err));
 app.listen(port, () => {
     console.log(`Server listening on port:${port}`);
 });

@@ -1,8 +1,8 @@
 const request = require('supertest');
-const mongoose = require('mongoose');
-const app = require('../app');
+const app = require('../../app');
 const ShortUrl = require('../models/ShortUrl');
 const jwt = require('jsonwebtoken');
+const QRCode = require('qrcode');
 
 jest.mock('../models/ShortUrl');
 jest.mock('../middleware/authMiddleware', () => ({
@@ -20,8 +20,6 @@ jest.mock('qrcode', () => ({
   toDataURL: jest.fn().mockResolvedValue('mock-qr-code-data-url')
 }));
 
-const QRCode = require('qrcode');
-
 describe('Shorten Routes', () => {
   let token;
   let userId;
@@ -29,10 +27,6 @@ describe('Shorten Routes', () => {
   beforeAll(() => {
     userId = 'mockedUserId';
     token = jwt.sign({ id: userId }, 'your_jwt_secret');
-  });
-
-  afterAll(async () => {
-    await mongoose.connection.close();
   });
 
   describe('GET /shorten', () => {
@@ -48,8 +42,8 @@ describe('Shorten Routes', () => {
         .set('Cookie', `jwt=${token}`);
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('shortUrls');
-      expect(response.body.shortUrls).toHaveLength(2);
+      expect(response.text).toContain('abc123');
+      expect(response.text).toContain('def456');
     });
 
     it('should handle database errors', async () => {
@@ -60,7 +54,8 @@ describe('Shorten Routes', () => {
         .set('Cookie', `jwt=${token}`);
 
       expect(response.status).toBe(500);
-      expect(response.text).toContain('Error retrieving short URLs');
+      expect(response.text).toContain('Error');
+      expect(response.headers['content-type']).toContain('text/html');
     });
   });
 
@@ -106,6 +101,16 @@ describe('Shorten Routes', () => {
       const response = await request(app)
         .post('/shorten')
         .send({ fullUrl: 'invalid-url' })
+        .set('Cookie', `jwt=${token}`);
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error', 'Invalid URL');
+    });
+
+    it('should handle empty URLs', async () => {
+      const response = await request(app)
+        .post('/shorten')
+        .send({ fullUrl: '' })
         .set('Cookie', `jwt=${token}`);
 
       expect(response.status).toBe(400);
